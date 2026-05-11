@@ -1,0 +1,131 @@
+<div class="converter-wrapper">
+
+  <!-- Header -->
+  <header class="app-header">
+    <mat-icon class="logo-icon">currency_exchange</mat-icon>
+    <h1>Calculadora de Monedas</h1>
+  </header>
+
+  <!-- Favoritos -->
+  @if (favorites().length > 0) {
+    <section class="favorites-section">
+      <p class="section-label">Favoritos</p>
+      <div class="chips-row">
+        @for (pair of favorites(); track pair.from + pair.to) {
+          <button mat-stroked-button class="fav-chip" (click)="applyFavorite(pair)">
+            {{ pair.from }} / {{ pair.to }}
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Conversor principal -->
+  <mat-card class="converter-card">
+
+    <!-- Monto -->
+    <mat-form-field appearance="outline" class="full-width amount-field">
+      <mat-label>Monto</mat-label>
+      <input matInput type="number" [formControl]="amountControl"
+             placeholder="0.00" inputmode="decimal" min="0" autocomplete="off">
+      <mat-icon matSuffix>edit</mat-icon>
+    </mat-form-field>
+
+    <!-- Par de monedas -->
+    <div class="currency-row">
+
+      <!-- Moneda origen -->
+      <mat-form-field appearance="outline" class="currency-field">
+        <mat-label>De</mat-label>
+        <input matInput [formControl]="fromSearchControl"
+               [matAutocomplete]="autoFrom" placeholder="USD">
+        <mat-autocomplete #autoFrom="matAutocomplete"
+          (optionSelected)="selectCurrency('from', $event.option.value)">
+          @for (c of filteredFrom(); track c.code) {
+            <mat-option [value]="c">
+              <span class="currency-code">{{ c.code }}</span>
+              <span class="currency-name">{{ c.name }}</span>
+            </mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+
+      <!-- Boton swap -->
+      <button mat-icon-button class="swap-btn" (click)="swap()"
+              matTooltip="Invertir par">
+        <mat-icon>swap_horiz</mat-icon>
+      </button>
+
+      <!-- Moneda destino -->
+      <mat-form-field appearance="outline" class="currency-field">
+        <mat-label>A</mat-label>
+        <input matInput [formControl]="toSearchControl"
+               [matAutocomplete]="autoTo" placeholder="COP">
+        <mat-autocomplete #autoTo="matAutocomplete"
+          (optionSelected)="selectCurrency('to', $event.option.value)">
+          @for (c of filteredTo(); track c.code) {
+            <mat-option [value]="c">
+              <span class="currency-code">{{ c.code }}</span>
+              <span class="currency-name">{{ c.name }}</span>
+            </mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+
+    </div>
+
+    <!-- Resultado -->
+    <div class="result-section">
+      @if (loading()) {
+        <mat-spinner diameter="32"></mat-spinner>
+      } @else if (error()) {
+        <p class="error-text">
+          <mat-icon>wifi_off</mat-icon> {{ error() }}
+        </p>
+      } @else if (result() !== null) {
+        <div class="result-display">
+          <span class="result-value">
+            {{ result() | number:'1.2-4' }} {{ selectedTo()?.code }}
+          </span>
+          <div class="rate-info">
+            <span>1 {{ selectedFrom()?.code }} = {{ currentRate() | number:'1.4-6' }} {{ selectedTo()?.code }}</span>
+            @if (rateDate()) {
+              <span class="rate-date"> · Tasa del {{ rateDate() }}</span>
+            }
+            @if (fromCache()) {
+              <mat-icon class="cache-icon" matTooltip="Tasa en cache, sin conexion">cloud_off</mat-icon>
+            }
+          </div>
+          <p class="disclaimer">Tasa referencial. No usar para transacciones financieras oficiales.</p>
+        </div>
+      } @else {
+        <p class="placeholder-text">Ingresa un monto para ver el resultado</p>
+      }
+    </div>
+
+    <!-- Acciones -->
+    <div class="actions-row">
+      <button mat-icon-button [color]="isFavorite() ? 'warn' : 'default'"
+              (click)="toggleFavorite()"
+              [matTooltip]="isFavorite() ? 'Quitar de favoritos' : 'Agregar a favoritos'">
+        <mat-icon>{{ isFavorite() ? 'favorite' : 'favorite_border' }}</mat-icon>
+      </button>
+    </div>
+
+  </mat-card>
+
+  <!-- Historial -->
+  @if (history().length > 0) {
+    <section class="history-section">
+      <p class="section-label">Conversiones recientes</p>
+      <div class="chips-row">
+        @for (record of history(); track $index) {
+          <button mat-stroked-button class="history-chip" (click)="applyHistory($index)">
+            {{ record.amount | number:'1.0-2' }} {{ record.from }} → {{ record.to }}
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+</div>
