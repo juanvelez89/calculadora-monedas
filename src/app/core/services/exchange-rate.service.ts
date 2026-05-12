@@ -15,6 +15,11 @@ export const PRIORITY_CURRENCIES = [
   'CLP', 'PEN', 'UYU', 'GBP', 'CAD', 'JPY', 'CNY'
 ];
 
+interface FrankfurterCurrency {
+  iso_code: string;
+  name: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ExchangeRateService {
 
@@ -23,12 +28,20 @@ export class ExchangeRateService {
   getCurrencies(): Observable<Currency[]> {
     const cached = localStorage.getItem(CURRENCIES_CACHE_KEY);
     if (cached) {
-      return of(JSON.parse(cached) as Currency[]);
+      try {
+        const parsed = JSON.parse(cached) as Currency[];
+        // Validar que el cache tiene el formato correcto (code debe ser string de letras)
+        if (parsed.length > 0 && typeof parsed[0].code === 'string' && /^[A-Z]/.test(parsed[0].code)) {
+          return of(parsed);
+        }
+      } catch {}
+      // Cache corrupto: borrarlo y refetchar
+      localStorage.removeItem(CURRENCIES_CACHE_KEY);
     }
 
-    return this.http.get<Record<string, string>>(`${BASE_URL}/currencies`).pipe(
+    return this.http.get<FrankfurterCurrency[]>(`${BASE_URL}/currencies`).pipe(
       map(data => {
-        const all: Currency[] = Object.entries(data).map(([code, name]) => ({ code, name }));
+        const all: Currency[] = data.map(c => ({ code: c.iso_code, name: c.name }));
         // Ordenar: primero las prioritarias, luego el resto alfabeticamente
         const priority = PRIORITY_CURRENCIES
           .map(code => all.find(c => c.code === code))
