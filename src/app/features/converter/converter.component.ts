@@ -113,7 +113,10 @@ export class ConverterComponent implements OnInit, OnDestroy {
     return map[locale] ?? map[locale.split('-')[0]] ?? null;
   }
 
-  private filterCurrencies(query: string): Currency[] {
+  private filterCurrencies(query: string | Currency): Currency[] {
+    // Cuando mat-autocomplete selecciona una opcion emite el objeto Currency;
+    // en ese caso no filtramos, mostramos la lista completa.
+    if (!query || typeof query !== 'string') return this.currencies();
     const q = query.toLowerCase();
     if (!q) return this.currencies();
     return this.currencies().filter(
